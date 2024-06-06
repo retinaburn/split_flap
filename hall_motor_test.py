@@ -1,7 +1,18 @@
 #Source: electrocredible.com, Language: MicroPython
-import utime
 from machine import Pin
+import machine
+import time
+import asyncio
 
+hall_sensor = machine.ADC(26)
+
+async def sensor_loop():
+    while True:
+            value = hall_sensor.read_u16()
+            print(f"Value: {value}")
+            
+            await asyncio.sleep(0.5)
+        
 # Define the pins for the stepper motor
 stepper_pins = [Pin(12, Pin.OUT), Pin(13, Pin.OUT), Pin(14, Pin.OUT), Pin(15, Pin.OUT)]
 
@@ -13,7 +24,7 @@ step_sequence = [
     [0, 0, 1, 1],
 ]
 
-def step(direction, steps, delay):
+async def step(direction, steps, delay):
     # Use the global step_index variable so that it can be modified by this function
     global step_index
     # Loop through the specified number of steps in the specified direction
@@ -27,10 +38,18 @@ def step(direction, steps, delay):
             # Set the pin to this value
             stepper_pins[pin_index].value(pin_value)
         # Delay for the specified amount of time before taking the next step
-        utime.sleep(delay)
+        await asyncio.sleep(delay)
 # Set the initial step index to 0
 step_index = 0
 # Take the specified number of steps in the anti-clockwise direction with a delay of 0.01 seconds between steps
-step(1, 1536, 0.01)
+asyncio.create_task(step(1, 2048, 0.01))
+asyncio.create_task(sensor_loop())
 # Take the specified number of steps in the clockwise direction with a delay of 0.01 seconds between steps
 #step(-1, 1000, 0.001)
+
+loop = asyncio.get_event_loop()
+try:
+    loop.run_forever()
+except KeyboardInterrupt:
+    loop.close()
+print("Done")
