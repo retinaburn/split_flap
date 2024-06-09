@@ -4,12 +4,15 @@ import machine
 import time
 import asyncio
 
+DETECT_LEVEL = 3000  #Level below shows magnet detected
+
 hall_sensor = machine.ADC(26)
 
 async def sensor_loop():
     while True:
             value = hall_sensor.read_u16()
-            print(f"Value: {value}")
+            detected = value < DETECT_LEVEL
+            print(f"Value: {value}, {detected}")
             
             await asyncio.sleep(0.5)
         
@@ -42,7 +45,7 @@ async def step(direction, steps, delay):
 # Set the initial step index to 0
 step_index = 0
 # Take the specified number of steps in the anti-clockwise direction with a delay of 0.01 seconds between steps
-asyncio.create_task(step(1, 2048, 0.01))
+asyncio.create_task(step(1, 204.8 * 10, 0.002))
 asyncio.create_task(sensor_loop())
 # Take the specified number of steps in the clockwise direction with a delay of 0.01 seconds between steps
 #step(-1, 1000, 0.001)
