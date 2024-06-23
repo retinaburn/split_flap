@@ -5,10 +5,10 @@ import random
 import time
 import asyncio
 
-DETECT_LEVEL = 5000  #Level below shows magnet detected
+DETECT_LEVEL = 6000  #Level below shows magnet detected
 
-hall_sensor1 = machine.ADC(27)
-hall_sensor2 = machine.ADC(26)
+hall_sensor1 = machine.ADC(machine.Pin(27, machine.Pin.PULL_UP))
+hall_sensor2 = machine.ADC(machine.Pin(26, machine.Pin.PULL_UP))
 
 AT = 0
 NEXT = 1
@@ -79,6 +79,7 @@ MOTOR1_FACTOR = 204.8
 async def run_loop_motor1():
     global motor1
     while True:
+        await asyncio.sleep(0.01)
         if (motor1[AT] == -1):
             print(f"motor1 AT: {motor1[AT]}, DETECTED: {motor1[DETECTED]}")
             while motor1[DETECTED] == False:
@@ -91,7 +92,7 @@ async def run_loop_motor1():
             await step(stepper_pins1, 1, MOTOR1_FACTOR * 1, 0.002, 1)
             motor1[AT] += 1
             motor1[AT] = motor1[AT] % 10
-        await asyncio.sleep(0.01)
+        #await asyncio.sleep(0.002)
 
 MOTOR2_FACTOR = MOTOR1_FACTOR
 MODE = 3
@@ -99,6 +100,7 @@ MODE = 3
 async def run_loop_motor2():
     global motor2
     while True:
+        await asyncio.sleep(0.01)
         if (motor2[AT] == -1):
             print(f"motor2 AT: {motor2[AT]}, DETECTED: {motor2[DETECTED]}")
             while motor2[DETECTED] == False:
@@ -111,7 +113,7 @@ async def run_loop_motor2():
             await step(stepper_pins2, 1, MOTOR2_FACTOR * 1, 0.002, 2)
             motor2[AT] += 1
             motor2[AT] = motor2[AT] % 10        
-        await asyncio.sleep(0.01)
+        
 
 async def num_loop():
     global motor1, motor2
