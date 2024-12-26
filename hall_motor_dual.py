@@ -4,10 +4,10 @@ import machine
 import time
 import asyncio
 
-DETECT_LEVEL = 3000  #Level below shows magnet detected
+DETECT_LEVEL = 48000  #Level below shows magnet detected
 
-hall_sensor1 = machine.ADC(26)
-hall_sensor2 = machine.ADC(27)
+hall_sensor1 = machine.ADC(machine.Pin(26, machine.Pin.PULL_UP))
+hall_sensor2 = machine.ADC(machine.Pin(27, machine.Pin.PULL_UP))
 
 async def sensor_loop():
     while True:
@@ -18,7 +18,7 @@ async def sensor_loop():
             detected2 = value2 < DETECT_LEVEL
             print(f"Value: {value1}, {detected1}, {value2}, {detected2}")
             
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.05)
         
 # Define the pins for the stepper motor
 stepper_pins1 = [Pin(16, Pin.OUT), Pin(17, Pin.OUT), Pin(14, Pin.OUT), Pin(15, Pin.OUT)]

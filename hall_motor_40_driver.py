@@ -5,10 +5,17 @@ import random
 import time
 import asyncio
 
-DETECT_LEVEL = 6000  #Level below shows magnet detected
+NOISE_LEVEL = 3500  #Anything above this is noise
+DETECT_LEVEL = 1800  #Level above shows magnet detected
 
-hall_sensor1 = machine.ADC(machine.Pin(27, machine.Pin.PULL_UP))
+#hall_sensor1 = machine.ADC(machine.Pin(27, machine.Pin.PULL_UP))
 hall_sensor2 = machine.ADC(machine.Pin(26, machine.Pin.PULL_UP))
+
+uppercase_and_digits = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+                        'U', 'V', 'W', 'X', 'Y', 'Z', '!','.','?','#',
+                        '0', '1', '2', '3','4', '5', '6', '7', '8', '9',]
+
 
 AT = 0
 NEXT = 1
@@ -30,16 +37,17 @@ motor2[STEP_INDEX] = 0
 async def sensor_loop():
     global motor1, motor2
     while True:
-            value1 = hall_sensor1.read_u16()
-            detected1 = value1 < DETECT_LEVEL            
-            motor1[DETECTED] = detected1
-            
+            #value1 = hall_sensor1.read_u16()
+            #value1 = 0
+            #detected1 = value1 < DETECT_LEVEL            
+            #motor1[DETECTED] = detected1
+            #print(f"Value: {value1}, {detected1}")
+        
             value2 = hall_sensor2.read_u16()
-            detected2 = value2 < DETECT_LEVEL
+            detected2 = value2 > DETECT_LEVEL and value2 < NOISE_LEVEL
             motor2[DETECTED] = detected2
-            
-            #print(f"Value: {value1}, {detected1}, {value2}, {detected2}")
-            print(f"Value: {value2}, {detected2}")                     
+            #print(f"Value: {value2}, {detected2}")                     
+            #print(f"Value: {value1}, {detected1}, {value2}, {detected2}")                     
             await asyncio.sleep(0.01)
         
 # Define the pins for the stepper motor
@@ -85,18 +93,18 @@ async def run_loop_motor1():
             print(f"motor1 AT: {motor1[AT]}, DETECTED: {motor1[DETECTED]}")
             while motor1[DETECTED] == False:
                 print("seek STEP motor1 by 1")
-                await step(stepper_pins1, 1, MOTOR1_FACTOR * 1, 0.002, 1)
+                await step(stepper_pins1, 1, MOTOR1_FACTOR, 0.002, 1)
             motor1[AT] = 0
             print(f"motor1 AT: {motor1[AT]}, DETECTED: {motor1[DETECTED]}")
-        if motor1[AT] != motor1[NEXT]:
-            print(f"next STEP motor1 by 1, {motor1[AT]} vs {motor1[NEXT]}")
-            await step(stepper_pins1, 1, MOTOR1_FACTOR * 1, 0.002, 1)
+        if uppercase_and_digits[motor1[AT]] != uppercase_and_digits[motor1[NEXT]]:
+            print(f"next STEP motor1 by 1, {uppercase_and_digits[motor1[AT]]} vs {uppercase_and_digits[motor1[NEXT]]}")
+            await step(stepper_pins1, 1, MOTOR1_FACTOR, 0.002, 1)
             motor1[AT] += 1
-            motor1[AT] = motor1[AT] % 10
+            motor1[AT] = motor1[AT] % 40
         #await asyncio.sleep(0.002)
 
 MOTOR2_FACTOR = MOTOR1_FACTOR
-MODE = 2
+MODE = 2 #3
 
 async def run_loop_motor2():
     global motor2
@@ -105,15 +113,17 @@ async def run_loop_motor2():
         if (motor2[AT] == -1):
             print(f"motor2 AT: {motor2[AT]}, DETECTED: {motor2[DETECTED]}")
             while motor2[DETECTED] == False:
-                print("seek STEP motor2 by 1")
-                await step(stepper_pins2, 1, MOTOR2_FACTOR * 1, 0.002, 2)
+                #print(f"seek STEP motor2 by 1, {MOTOR2_FACTOR}")
+                await step(stepper_pins2, 1, MOTOR2_FACTOR, 0.002, 2)
             motor2[AT] = 0
             print(f"motor2 AT: {motor2[AT]}, DETECTED: {motor2[DETECTED]}")
         if motor2[AT] != motor2[NEXT]:
+            print(f"{motor1[AT]} ({uppercase_and_digits[motor1[AT]]}) vs {motor1[NEXT]} ({uppercase_and_digits[motor1[NEXT]]}), {motor2[AT]} ({uppercase_and_digits[motor2[AT]]}) vs {motor2[NEXT]} ({uppercase_and_digits[motor2[NEXT]]})")            
             print(f"next STEP motor2 by 1, {motor2[AT]} vs {motor2[NEXT]}")
-            await step(stepper_pins2, 1, MOTOR2_FACTOR * 1, 0.002, 2)
+            await step(stepper_pins2, 1, MOTOR2_FACTOR, 0.002, 2)
             motor2[AT] += 1
-            motor2[AT] = motor2[AT] % 10        
+            motor2[AT] = motor2[AT] % 40
+        
         
 
 async def num_loop():
@@ -124,7 +134,7 @@ async def num_loop():
         #     print("MOTOR1 FOUND!")
         # if motor2[AT] == motor2[NEXT]:
         #     print("MOTOR2 FOUND!")
-        print(f"{motor1[AT]} vs {motor1[NEXT]}, {motor2[AT]} vs {motor2[NEXT]}")            
+        #print(f"{motor1[AT]} ({uppercase_and_digits[motor1[AT]]}) vs {motor1[NEXT]} ({uppercase_and_digits[motor1[NEXT]]}), {motor2[AT]} ({uppercase_and_digits[motor2[AT]]}) vs {motor2[NEXT]} ({uppercase_and_digits[motor2[NEXT]]})")            
         mode1 = motor1[AT] == motor1[NEXT]
         mode2 = motor2[AT] == motor2[NEXT]
         mode3 = motor1[AT] == motor1[NEXT] and motor2[AT] == motor2[NEXT]
@@ -137,13 +147,15 @@ async def num_loop():
         elif MODE == 3:
             mode_test = mode3
 
-        if mode_test == True:        
+        if mode_test == True:
+            print(f"{motor1[AT]} ({uppercase_and_digits[motor1[AT]]}) vs {motor1[NEXT]} ({uppercase_and_digits[motor1[NEXT]]}), {motor2[AT]} ({uppercase_and_digits[motor2[AT]]}) vs {motor2[NEXT]} ({uppercase_and_digits[motor2[NEXT]]})")            
             await asyncio.sleep(5) 
-            motor1[NEXT] = random.randint(0,9)
+            motor1[NEXT] = random.randint(0,39)
             print(f"Motor1 seeking to {motor1[NEXT]}")
-            motor2[NEXT] = random.randint(0,40)
+            motor2[NEXT] = random.randint(0,39)
             print(f"Motor2 seeking to {motor2[NEXT]}")
         await asyncio.sleep(0.1)
+
 
 motor1[NEXT] = 0
 motor2[NEXT] = 0

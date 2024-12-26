@@ -4,20 +4,23 @@ import machine
 import time
 import asyncio
 
-DETECT_LEVEL = 3000  #Level below shows magnet detected
-
-hall_sensor = machine.ADC(26)
+DETECT_LEVEL = 1800  #Level above shows magnet detected
+NOISE_LEVEL = 3000
+hall_sensor = machine.ADC(machine.Pin(26, machine.Pin.PULL_UP))
 
 async def sensor_loop():
+    
     while True:
             value = hall_sensor.read_u16()
-            detected = value < DETECT_LEVEL
-            print(f"Value: {value}, {detected}")
+            detected = value > DETECT_LEVEL and value < NOISE_LEVEL
+            if (detected == True):
+                print(f"Value: {value}, {detected}")
             
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.050)
         
 # Define the pins for the stepper motor
-stepper_pins = [Pin(12, Pin.OUT), Pin(13, Pin.OUT), Pin(14, Pin.OUT), Pin(15, Pin.OUT)]
+#stepper_pins = [Pin(16, Pin.OUT), Pin(17, Pin.OUT), Pin(14, Pin.OUT), Pin(15, Pin.OUT)]
+stepper_pins = [Pin(10, Pin.OUT), Pin(11, Pin.OUT), Pin(12, Pin.OUT), Pin(13, Pin.OUT)]
 
 # Define the sequence of steps for the motor to take
 step_sequence = [
@@ -26,6 +29,7 @@ step_sequence = [
     [0, 1, 1, 0],
     [0, 0, 1, 1],
 ]
+
 
 async def step(direction, steps, delay):
     # Use the global step_index variable so that it can be modified by this function
@@ -45,7 +49,15 @@ async def step(direction, steps, delay):
 # Set the initial step index to 0
 step_index = 0
 # Take the specified number of steps in the anti-clockwise direction with a delay of 0.01 seconds between steps
-asyncio.create_task(step(1, 204.8 * 10, 0.002))
+MOTOR_FACTOR=51.2
+#for i in range(40):
+    #step(1, 1.0 * MOTOR_FACTOR, 0.020)
+    #step(1, 1.0 * MOTOR_FACTOR, 0.002)
+
+# Set the initial step index to 0
+step_index = 0
+# Take the specified number of steps in the anti-clockwise direction with a delay of 0.01 seconds between steps
+asyncio.create_task(step(1, 120 * MOTOR_FACTOR, 0.002))
 asyncio.create_task(sensor_loop())
 # Take the specified number of steps in the clockwise direction with a delay of 0.01 seconds between steps
 #step(-1, 1000, 0.001)
